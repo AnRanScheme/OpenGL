@@ -35,6 +35,9 @@ GLfloat vVerts[] = {
         -blockSize,blockSize,0.0f
 };
 
+GLfloat xPos = 0.0f;
+GLfloat yPos = 0.0f;
+
 /// 在窗口大小改变时，接收新的宽度&高度。
 /// @param w 宽
 /// @param h 高
@@ -46,6 +49,7 @@ void changeSize(int w, int h) {
 /// 绘制
 void RenderScene(void) {
     //1.清除一个或者一组特定的缓存区
+    
     /*
      缓冲区是一块存在图像信息的储存空间，红色、绿色、蓝色和alpha分量通常一起分量通常一起作为颜色缓存区或像素缓存区引用。
      OpenGL 中不止一种缓冲区（颜色缓存区、深度缓存区和模板缓存区）
@@ -55,6 +59,7 @@ void RenderScene(void) {
      GL_DEPTH_BUFFER_BIT :指示深度缓存区
      GL_STENCIL_BUFFER_BIT:指示模板缓冲区
      */
+    /*
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
     
     //2.设置一组浮点数来表示红色
@@ -66,6 +71,32 @@ void RenderScene(void) {
     triangleBatch.Draw();
     //在开始的设置openGL 窗口的时候，我们指定要一个双缓冲区的渲染环境。这就意味着将在后台缓冲区进行渲染，渲染结束后交换给前台。这种方式可以防止观察者看到可能伴随着动画帧与动画帧之间的闪烁的渲染过程。缓冲区交换平台将以平台特定的方式进行。
     //将后台缓冲区进行渲染，然后结束后交换给前台
+    glutSwapBuffers();
+    */
+    
+    //---------方法2--------
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+    
+    GLfloat vRed[] = {1.0f,0.0f,0.0f,0.0f};
+    
+    M3DMatrix44f mFinalTransform,mTransfromMatrix,mRotationMartix;
+    
+    //平移
+    m3dTranslationMatrix44(mTransfromMatrix, xPos, yPos, 0.0f);
+    
+    //每次平移时，旋转5度
+    static float yRot = 0.0f;
+    yRot += 5.0f;
+    m3dRotationMatrix44(mRotationMartix, m3dDegToRad(yRot), 0.0f, 0.0f, 1.0f);
+    
+    //将旋转和移动的矩阵结果 合并到mFinalTransform （矩阵相乘）
+    m3dMatrixMultiply44(mFinalTransform, mTransfromMatrix, mRotationMartix);
+    
+    //将矩阵结果 提交给固定着色器（平面着色器）中绘制
+    shaderManager.UseStockShader(GLT_SHADER_FLAT,mFinalTransform,vRed);
+    triangleBatch.Draw();
+    
+    //执行交换缓存区
     glutSwapBuffers();
 }
 
@@ -92,7 +123,7 @@ void setupRC() {
 }
 
 void SpecialKeys(int key, int x, int y) {
-    
+    /*
     GLfloat stepSize = 0.025f;
     
     GLfloat blockX = vVerts[0];
@@ -168,6 +199,46 @@ void SpecialKeys(int key, int x, int y) {
     printf("(%f,%f)\n",vVerts[9],vVerts[10]);
     
     triangleBatch.CopyVertexData3f(vVerts);
+    
+    glutPostRedisplay();
+     */
+    
+    GLfloat stepSize = 0.025f;
+    
+    if (key == GLUT_KEY_UP) {
+        
+        yPos += stepSize;
+    }
+    
+    if (key == GLUT_KEY_DOWN) {
+        yPos -= stepSize;
+    }
+    
+    if (key == GLUT_KEY_LEFT) {
+        xPos -= stepSize;
+    }
+    
+    if (key == GLUT_KEY_RIGHT) {
+        xPos += stepSize;
+    }
+    
+    //碰撞检测
+    if (xPos < (-1.0f + blockSize)) {
+        
+        xPos = -1.0f + blockSize;
+    }
+    
+    if (xPos > (1.0f - blockSize)) {
+        xPos = 1.0f - blockSize;
+    }
+    
+    if (yPos < (-1.0f + blockSize)) {
+        yPos = -1.0f + blockSize;
+    }
+    
+    if (yPos > (1.0f - blockSize)) {
+        yPos = 1.0f - blockSize;
+    }
     
     glutPostRedisplay();
 }
